@@ -6,12 +6,12 @@
     <title>Hello World!</title>
 </head>
 
-<body style="background-color:black;">
+<body style="background-color:black; padding:0; margin:0;">
     <div style="width:100%; text-align:center;">
         <button id="pickDirectory" type="button">Choose Directory</button>
         <img id="displayImage" src="" />
     </div>
-</body>
+
 
 <script type="text/javascript">
     'use strict';
@@ -30,6 +30,8 @@
     });
     
     ipc.on("DirectorySelected", function(event, directory) {
+        pickDirectoryButton.style.display = 'none';
+        
         fs.readdir(directory, function(err, files) {
             console.log(files);
 
@@ -60,8 +62,11 @@
                         console.log(err);
                         return;
                     }
+                    
+                    var windowWidth = window.innerWidth;
+                    var windowHeight = window.innerHeight;
 
-                    image.contain(800, 600, "black", function(err, containedImage) {
+                    image.contain(windowWidth, windowHeight, "black", function(err, containedImage) {
                         containedImage.toBuffer("png", function(err, buffer) {
                             var nativeImageThing = nativeImage.createFromBuffer(buffer);
                             var data = nativeImageThing.toDataURL();
@@ -83,5 +88,5 @@
     
     
 </script>
-
+</body>
 </html>

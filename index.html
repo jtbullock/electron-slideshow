@@ -13,80 +13,111 @@
     </div>
 
 
-<script type="text/javascript">
-    'use strict';
+    <script type="text/javascript">
+        'use strict';
 
-    var ipc = require('electron').ipcRenderer;
-    var nativeImage = require('electron').nativeImage;
-    var fs = require('fs');
-    var lwip = require('lwip');
-    var path = require('path');
+        var ipc = require('electron').ipcRenderer;
+        var nativeImage = require('electron').nativeImage;
+        var fs = require('fs');
+        var lwip = require('lwip');
+        var path = require('path');
 
-    var pickDirectoryButton = document.querySelector('#pickDirectory');
-    var displayImage = document.querySelector('#displayImage');
+        var pickDirectoryButton = document.querySelector('#pickDirectory');
+        var displayImage = document.querySelector('#displayImage');
 
-    pickDirectoryButton.addEventListener("click", function() {
-        ipc.send('OpenDirectoryDialog');
-    });
-    
-    ipc.on("DirectorySelected", function(event, directory) {
-        pickDirectoryButton.style.display = 'none';
-        
-        fs.readdir(directory, function(err, files) {
-            console.log(files);
+        pickDirectoryButton.addEventListener("click", function() {
+            ipc.send('OpenDirectoryDialog');
+        });
 
-            var imageCounter = 0;
-            var nrImages = files.length;
+        ipc.on("DirectorySelected", function(event, directory) {
+            pickDirectoryButton.style.display = 'none';
 
-            var timer = setInterval(function() {
+            fs.readdir(directory, function(err, files) {
 
-                var fileName = files[imageCounter];
-                var fileExtension = path.extname(fileName);
-                
-                console.log(fileExtension);
-                
-                if(fileExtension != '.jpg' && fileExtension != '.png'
-                   && fileExtension != '.gif' ) {
-                    console.log('Unknown file type, returning');
-                    imageCounter++;
-                    return;
+                var imageCounter = 0;
+                var nrImages = files.length;
+                var currentIndex = nrImages;
+
+                var displayOrder = [];
+
+                for (var i = 0; i < nrImages; i++) {
+                    displayOrder[i] = i;
                 }
-                    
-                var fullFilePath = directory + '/' + files[imageCounter]
+                
+                while (0 !== currentIndex) {
+                    // Pick a remaining element...
+                    var randomIndex = Math.floor(Math.random() * currentIndex);
+                    currentIndex -= 1;
 
-                console.log(fileName);
+                    // And swap it with the current element.
+                    var temporaryValue = displayOrder[currentIndex];
+                    displayOrder[currentIndex] = displayOrder[randomIndex];
+                    displayOrder[randomIndex] = temporaryValue;
+                }
 
-                lwip.open(fullFilePath, function(err, image) {
+                console.log(displayOrder);
 
-                    if (err) {
-                        console.log(err);
+                var timer = setInterval(function() {
+
+                    var fileName = files[displayOrder[imageCounter]];
+                    var fileExtension = path.extname(fileName);
+
+                    console.log(fileExtension);
+
+                    if (fileExtension != '.jpg' && fileExtension != '.png' && fileExtension != '.gif') {
+                        console.log('Unknown file type, returning');
+                        imageCounter++;
                         return;
                     }
-                    
-                    var windowWidth = window.innerWidth;
-                    var windowHeight = window.innerHeight;
 
-                    image.contain(windowWidth, windowHeight, "black", function(err, containedImage) {
-                        containedImage.toBuffer("png", function(err, buffer) {
-                            var nativeImageThing = nativeImage.createFromBuffer(buffer);
-                            var data = nativeImageThing.toDataURL();
-                            displayImage.src = data;
+                    var fullFilePath = directory + '/' + fileName;
 
+                    console.log(fileName);
+
+                    lwip.open(fullFilePath, function(err, image) {
+
+                        if (err) {
+                            console.log(err);
+                            imageCounter++;
+                            return;
+                        }
+
+                        var windowWidth = window.innerWidth;
+                        var windowHeight = window.innerHeight;
+
+                        image.contain(windowWidth, windowHeight, "black", function(err, containedImage) {
+                            
+                            if(err){
+                                imageCounter++;
+                                return;
+                            }
+                            
+                            containedImage.toBuffer("png", function(err, buffer) {
+                                
+                                if(err) {
+                                    imageCounter++;
+                                    return;
+                                }
+                                
+                                
+                                var nativeImageThing = nativeImage.createFromBuffer(buffer);
+                                var data = nativeImageThing.toDataURL();
+                                displayImage.src = data;
+
+                            });
                         });
+
+                        imageCounter++;
+
+                        if (imageCounter == nrImages) {
+                            clearInterval(timer);
+                        }
                     });
 
-                    imageCounter++;
-
-                    if (imageCounter == nrImages) {
-                        clearInterval(timer);
-                    }
-                });
-
-            }, 5000);
+                }, 1000);
+            });
         });
-    });
-    
-    
-</script>
+    </script>
 </body>
+
 </html>

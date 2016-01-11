@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Hello World!</title>
+  </head>
+  <body style="background-color:black;">
+      <div style="width:100%; text-align:center;">
+          <img id="displayImage" src="" />
+      </div>
+  </body>
+    
+    <script type="text/javascript">
+    'use strict';    
+    
+    var ipc = require('electron').ipcMain;
+        var nativeImage = require('electron').nativeImage;
+    var fs = require('fs');
+    var lwip = require('lwip');
+        
+    var electronButton = document.querySelector('#btn-electron-version');
+    var displayImage = document.querySelector('#displayImage');
+        
+//    electronButton.addEventListener('click', function(e) {
+//      ipc.send('GetElectronVersion');
+//    }); 
+        
+    fs.readdir('/Users/joshbullock/Dropbox/Pictures/Animals', function(err, files) {
+        console.log(files); 
+    
+        
+        var imageCounter = 0;
+        var nrImages = files.length;
+        
+        var timer = setInterval(function() {
+            
+            var fileName = '/Users/joshbullock/Dropbox/Pictures/Animals/' + files[imageCounter]
+        
+            console.log(fileName);
+            
+            lwip.open(fileName, function(err, image) {
+            
+            if(err) {
+                console.log(err);
+                return;
+            }
+            
+            image.contain(800, 600, "black", function(err, containedImage) {
+                containedImage.toBuffer("png", function(err, buffer) {
+                    var nativeImageThing = nativeImage.createFromBuffer(buffer);
+                    var data = nativeImageThing.toDataURL();
+                    displayImage.src = data;
+
+                });
+            });
+                
+            imageCounter++;
+            
+            if(imageCounter == nrImages)
+            {
+                clearInterval(timer);
+            }
+        });
+            
+        }, 5000);
+        
+        
+
+        
+    });
+    </script>
+</html>

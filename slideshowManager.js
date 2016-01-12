@@ -98,3 +98,5 @@ class SlideshowManager {
         });
     }
 }
+
+module.exports = SlideshowManager;

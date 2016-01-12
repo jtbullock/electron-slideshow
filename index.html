@@ -27,13 +27,12 @@
     <div class="l-image-display">
         <img id="displayImage" />
     </div>
-
-    <script src="slideshowManager.js" type="text/javascript"></script>
     
     <script type="text/javascript">
         'use strict';
         
         var ipc = require('electron').ipcRenderer;
+        var SlideshowManager = require('./SlideshowManager');
     
         var pickDirectoryButton = document.querySelector('#pickDirectory');
         var toggleSlideshowButton = document.querySelector('#toggle-slideshow');

@@ -1,9 +1,8 @@
 'use strict';
 
-var nativeImage = require('electron').nativeImage;
 var fs = require('fs');
-var lwip = require('lwip');
 var path = require('path');
+var imageResizer = require('./imageResizer');
 
 class SlideshowManager {
     constructor(directory) {
@@ -70,32 +69,17 @@ class SlideshowManager {
 
         console.log(fileName);
 
-        lwip.open(fullFilePath, function(err, image) {
+        imageResizer.resizeImage(fullFilePath, window.innerWidth, window.innerHeight,
+            this.imageResized);
+    }
 
-            if (err) {
-                console.log(err);
-                return;
-            }
+    imageResized(err, data) {
+        if (err) {
+            console.log(err);
+            return;
+        }
 
-            var windowWidth = window.innerWidth;
-            var windowHeight = window.innerHeight;
-
-            image.contain(windowWidth, windowHeight, "black", function(err, containedImage) {
-                if (err) {
-                    return;
-                }
-
-                containedImage.toBuffer("png", function(err, buffer) {
-                    if (err) {
-                        return;
-                    }
-
-                    var nativeImageThing = nativeImage.createFromBuffer(buffer);
-                    var data = nativeImageThing.toDataURL();
-                    displayImage.src = data;
-                });
-            });
-        });
+        displayImage.src = data;
     }
 }
 

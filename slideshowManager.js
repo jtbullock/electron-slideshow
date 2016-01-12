@@ -19,24 +19,17 @@ class SlideshowManager {
 
     onDirectoryRead(err, files) {
         this.imageCounter = 0;
-        this.files = files;
-        var nrImages = files.length;
-        var currentIndex = nrImages;
+        this.files = files.filter(function(element) {
+            var fileExtension = path.extname(element).toLowerCase();
+            return fileExtension == '.jpg' || fileExtension == '.png' || fileExtension == '.gif'
+        });
+        var nrImages = this.files.length;
 
         for (var i = 0; i < nrImages; i++) {
             this.displayOrder[i] = i;
         }
 
-        while (0 !== currentIndex) {
-            // Pick a remaining element...
-            var randomIndex = Math.floor(Math.random() * currentIndex);
-            currentIndex -= 1;
-
-            // And swap it with the current element.
-            var temporaryValue = this.displayOrder[currentIndex];
-            this.displayOrder[currentIndex] = this.displayOrder[randomIndex];
-            this.displayOrder[randomIndex] = temporaryValue;
-        }
+        this.shuffleArray(this.displayOrder);
 
         this.startSlideshow();
     }
@@ -54,18 +47,15 @@ class SlideshowManager {
     loadNextPicture() {
         var currentImageNumber = this.imageCounter;
         this.imageCounter++;
-
-        var slideshowSpeed = document.querySelector("#slideshow-speed").value * 1000;
-        this.timer = setTimeout(this.loadNextPicture.bind(this), slideshowSpeed);
-
+        
+        if(this.imageCounter < this.files.length) {
+            var slideshowSpeed = document.querySelector("#slideshow-speed").value * 1000;
+            this.timer = setTimeout(this.loadNextPicture.bind(this), slideshowSpeed);
+        }
+        
         var fileName = this.files[this.displayOrder[currentImageNumber]];
         var fileExtension = path.extname(fileName);
         var fullFilePath = this.directory + '/' + fileName;
-
-        if (fileExtension != '.jpg' && fileExtension != '.png' && fileExtension != '.gif') {
-            console.log('Unknown file type, returning');
-            return;
-        }
 
         console.log(fileName);
 
@@ -80,6 +70,21 @@ class SlideshowManager {
         }
 
         displayImage.src = data;
+    }
+
+    shuffleArray(array) {
+        var currentIndex = array.length;
+
+        while (0 !== currentIndex) {
+            // Pick a remaining element...
+            var randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex -= 1;
+
+            // And swap it with the current element.
+            var temporaryValue = this.displayOrder[currentIndex];
+            this.displayOrder[currentIndex] = this.displayOrder[randomIndex];
+            this.displayOrder[randomIndex] = temporaryValue;
+        }
     }
 }
 

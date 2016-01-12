@@ -1,0 +1,65 @@
+/* HTML ELEMENTS */
+body {
+    background-color:black;
+    padding:0;
+    margin:0;
+    font-family:Helvetica, Arial, sans-serif;
+    color:white;
+}
+
+button {
+    font-size:12pt; 
+    border:solid 1px white; 
+    background-color:transparent; 
+    color:white;
+}
+a {
+    color:white;
+    text-decoration:none;
+}
+a:hover {
+    text-decoration:underline;
+}
+
+/* CUSTOM */
+.options-bar {
+    background-color:rgba(255, 255, 255, .5);
+    padding:8px;
+    color:white;
+}
+
+.number-input {
+    width:30px;
+}
+
+.see-through-text {
+    color:rgba(255, 255, 255, .5);
+}
+
+.option-bar-option {
+    margin-right:6px;
+}
+
+/* LAYOUT */
+.l-top-option-bar {
+    position:absolute; 
+    top:0; 
+    left:0; 
+    width:100%; 
+    box-sizing:border-box;
+}
+
+.l-option-right {
+    float:right;
+    margin-top:3px;
+}
+
+.l-image-display {
+    width:100%; 
+    text-align:center;
+}
+
+.l-options-toggle {
+    position:absolute;
+    margin:8px;
+}

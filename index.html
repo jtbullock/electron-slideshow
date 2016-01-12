@@ -4,14 +4,29 @@
 <head>
     <meta charset="UTF-8">
     <title>Hello World!</title>
+    <link href="index.css" rel="stylesheet" />
 </head>
 
-<body style="background-color:black; padding:0; margin:0;">
-    <div style="width:100%; text-align:center;">
-        <button id="pickDirectory" type="button">Choose Directory</button>
-        <img id="displayImage" src="" />
+<body>
+
+    <div id="options-bar" class="options-bar l-top-option-bar">
+        <a href="javascript:void(0);" id='hide-options-bar' class='option-bar-option'>hide</a>
+        <button id="pickDirectory" class='option-bar-option'>Choose Directory</button>
+        <button id="toggle-slideshow" style="display:none;" class='option-bar-option'>Stop</button>
+        
+        <div class="l-option-right">
+            Speed:
+            <input id="slideshow-speed" type="text" class="number-input" value="5" />s
+        </div>
+    </div>
+    
+    <div id="options-toggle" class="l-options-toggle" style="display:none;">
+        <a href="javascript:void(0);" id="toggle-options" class="see-through-text">options</a>
     </div>
 
+    <div class="l-image-display">
+        <img id="displayImage" />
+    </div>
 
     <script type="text/javascript">
         'use strict';
@@ -23,100 +38,142 @@
         var path = require('path');
 
         var pickDirectoryButton = document.querySelector('#pickDirectory');
+        var toggleSlideshowButton = document.querySelector('#toggle-slideshow');
+        var toggleOptionsButton = document.querySelector('#toggle-options');
+        var optionsBar = document.querySelector('#options-bar');
+        var optionsToggleBar = document.querySelector('#options-toggle');
+        var hideOptionsBarLink = document.querySelector('#hide-options-bar');
         var displayImage = document.querySelector('#displayImage');
 
         pickDirectoryButton.addEventListener("click", function() {
             ipc.send('OpenDirectoryDialog');
         });
+        
+        toggleOptionsButton.addEventListener("click", function() {
+            optionsBar.style.display = 'block';
+            optionsToggleBar.style.display = 'none';
+        });
+        
+        hideOptionsBarLink.addEventListener("click", function() {
+            optionsBar.style.display = 'none';
+            optionsToggleBar.style.display = 'block';
+        });
 
         ipc.on("DirectorySelected", function(event, directory) {
             pickDirectoryButton.style.display = 'none';
+            optionsBar.style.display = 'none';
+            optionsToggleBar.style.display = 'block';
 
-            fs.readdir(directory, function(err, files) {
+            var myManager = new imageManager();
+            myManager.initialize(directory);
+            
+            toggleSlideshowButton.addEventListener('click', function(e) {
+                if(myManager.isRunning) {
+                    myManager.stopSlideShow();
+                    toggleSlideshowButton.textContent='Start'; 
+                }
+                else {
+                    myManager.startSlideshow();
+                    toggleSlideshowButton.textContent='Stop'; 
+                }
+            });
+            toggleSlideshowButton.style.display='inline';
 
-                var imageCounter = 0;
+        });
+
+        var imageManager = function() {
+            this.imageCounter = 0;
+            this.displayOrder = [];
+            this.files;
+            this.directory;
+            this.timer;
+            this.isRunning = false;
+
+            this.initialize = function(directory) {
+                this.directory = directory;
+                fs.readdir(directory, this.onDirectoryRead.bind(this));
+            };
+
+            this.onDirectoryRead = function(err, files) {
+                this.imageCounter = 0;
+                this.files = files;
                 var nrImages = files.length;
                 var currentIndex = nrImages;
 
-                var displayOrder = [];
-
                 for (var i = 0; i < nrImages; i++) {
-                    displayOrder[i] = i;
+                    this.displayOrder[i] = i;
                 }
-                
+
                 while (0 !== currentIndex) {
                     // Pick a remaining element...
                     var randomIndex = Math.floor(Math.random() * currentIndex);
                     currentIndex -= 1;
 
                     // And swap it with the current element.
-                    var temporaryValue = displayOrder[currentIndex];
-                    displayOrder[currentIndex] = displayOrder[randomIndex];
-                    displayOrder[randomIndex] = temporaryValue;
+                    var temporaryValue = this.displayOrder[currentIndex];
+                    this.displayOrder[currentIndex] = this.displayOrder[randomIndex];
+                    this.displayOrder[randomIndex] = temporaryValue;
+                }
+                
+                this.startSlideshow();
+            };
+
+            this.startSlideshow = function() {
+                this.isRunning = true;
+                this.loadNextPicture();
+            };
+            
+            this.stopSlideShow = function() {
+                this.isRunning = false;
+                clearTimeout(this.timer);
+            };
+
+            this.loadNextPicture = function() {
+                var currentImageNumber = this.imageCounter;
+                this.imageCounter++;
+                
+                var slideshowSpeed = document.querySelector("#slideshow-speed").value * 1000;
+                this.timer = setTimeout(this.loadNextPicture.bind(this), slideshowSpeed);
+                
+                var fileName = this.files[this.displayOrder[currentImageNumber]];
+                var fileExtension = path.extname(fileName);
+                var fullFilePath = this.directory + '/' + fileName;
+
+                if (fileExtension != '.jpg' && fileExtension != '.png' && fileExtension != '.gif') {
+                    console.log('Unknown file type, returning');
+                    return;
                 }
 
-                console.log(displayOrder);
+                console.log(fileName);
 
-                var timer = setInterval(function() {
+                lwip.open(fullFilePath, function(err, image) {
 
-                    var fileName = files[displayOrder[imageCounter]];
-                    var fileExtension = path.extname(fileName);
-
-                    console.log(fileExtension);
-
-                    if (fileExtension != '.jpg' && fileExtension != '.png' && fileExtension != '.gif') {
-                        console.log('Unknown file type, returning');
-                        imageCounter++;
+                    if (err) {
+                        console.log(err);
                         return;
                     }
 
-                    var fullFilePath = directory + '/' + fileName;
+                    var windowWidth = window.innerWidth;
+                    var windowHeight = window.innerHeight;
 
-                    console.log(fileName);
-
-                    lwip.open(fullFilePath, function(err, image) {
-
+                    image.contain(windowWidth, windowHeight, "black", function(err, containedImage) {
                         if (err) {
-                            console.log(err);
-                            imageCounter++;
                             return;
                         }
 
-                        var windowWidth = window.innerWidth;
-                        var windowHeight = window.innerHeight;
-
-                        image.contain(windowWidth, windowHeight, "black", function(err, containedImage) {
-                            
-                            if(err){
-                                imageCounter++;
+                        containedImage.toBuffer("png", function(err, buffer) {
+                            if (err) {
                                 return;
                             }
-                            
-                            containedImage.toBuffer("png", function(err, buffer) {
-                                
-                                if(err) {
-                                    imageCounter++;
-                                    return;
-                                }
-                                
-                                
-                                var nativeImageThing = nativeImage.createFromBuffer(buffer);
-                                var data = nativeImageThing.toDataURL();
-                                displayImage.src = data;
 
-                            });
+                            var nativeImageThing = nativeImage.createFromBuffer(buffer);
+                            var data = nativeImageThing.toDataURL();
+                            displayImage.src = data;
                         });
-
-                        imageCounter++;
-
-                        if (imageCounter == nrImages) {
-                            clearInterval(timer);
-                        }
                     });
-
-                }, 1000);
-            });
-        });
+                });
+            };
+        };
     </script>
 </body>
 

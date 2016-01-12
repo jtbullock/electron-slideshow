@@ -5,13 +5,8 @@ const electron = require('electron');
 const app = electron.app;
 // Module to create native browser window.
 const BrowserWindow = electron.BrowserWindow;
-
 const ipc = electron.ipcMain;
-
-const fs = require('fs');
-
 const dialog = require('electron').dialog;
-
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -21,7 +16,8 @@ function createWindow() {
     // Create the browser window.
     mainWindow = new BrowserWindow({
         width: 800,
-        height: 600
+        height: 600,
+        title: 'Electron Slideshow'
     });
 
     // and load the index.html of the app.

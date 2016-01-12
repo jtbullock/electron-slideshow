@@ -65,10 +65,10 @@ ipc.on('OpenDirectoryDialog', function(event) {
         title: "Choose Directory",
         properties: ["openDirectory"]
     });
-    
+
     console.log("Directory selected: " + directory);
-    
-    if(directory != null && directory.length > 0) {
+
+    if (directory != null && directory.length > 0) {
         event.sender.send('DirectorySelected', directory[0]);
     }
 });

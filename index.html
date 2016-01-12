@@ -13,13 +13,13 @@
         <a href="javascript:void(0);" id='hide-options-bar' class='option-bar-option'>hide</a>
         <button id="pickDirectory" class='option-bar-option'>Choose Directory</button>
         <button id="toggle-slideshow" style="display:none;" class='option-bar-option'>Stop</button>
-        
+
         <div class="l-option-right">
             Speed:
             <input id="slideshow-speed" type="text" class="number-input" value="5" />s
         </div>
     </div>
-    
+
     <div id="options-toggle" class="l-options-toggle" style="display:none;">
         <a href="javascript:void(0);" id="toggle-options" class="see-through-text">options</a>
     </div>
@@ -31,70 +31,20 @@
     <script type="text/javascript">
         'use strict';
 
-        var ipc = require('electron').ipcRenderer;
-        var nativeImage = require('electron').nativeImage;
-        var fs = require('fs');
-        var lwip = require('lwip');
-        var path = require('path');
-
-        var pickDirectoryButton = document.querySelector('#pickDirectory');
-        var toggleSlideshowButton = document.querySelector('#toggle-slideshow');
-        var toggleOptionsButton = document.querySelector('#toggle-options');
-        var optionsBar = document.querySelector('#options-bar');
-        var optionsToggleBar = document.querySelector('#options-toggle');
-        var hideOptionsBarLink = document.querySelector('#hide-options-bar');
-        var displayImage = document.querySelector('#displayImage');
-
-        pickDirectoryButton.addEventListener("click", function() {
-            ipc.send('OpenDirectoryDialog');
-        });
-        
-        toggleOptionsButton.addEventListener("click", function() {
-            optionsBar.style.display = 'block';
-            optionsToggleBar.style.display = 'none';
-        });
-        
-        hideOptionsBarLink.addEventListener("click", function() {
-            optionsBar.style.display = 'none';
-            optionsToggleBar.style.display = 'block';
-        });
-
-        ipc.on("DirectorySelected", function(event, directory) {
-            pickDirectoryButton.style.display = 'none';
-            optionsBar.style.display = 'none';
-            optionsToggleBar.style.display = 'block';
-
-            var myManager = new imageManager();
-            myManager.initialize(directory);
-            
-            toggleSlideshowButton.addEventListener('click', function(e) {
-                if(myManager.isRunning) {
-                    myManager.stopSlideShow();
-                    toggleSlideshowButton.textContent='Start'; 
-                }
-                else {
-                    myManager.startSlideshow();
-                    toggleSlideshowButton.textContent='Stop'; 
-                }
-            });
-            toggleSlideshowButton.style.display='inline';
-
-        });
-
-        var imageManager = function() {
-            this.imageCounter = 0;
-            this.displayOrder = [];
-            this.files;
-            this.directory;
-            this.timer;
-            this.isRunning = false;
-
-            this.initialize = function(directory) {
+        class SlideshowManager {
+            constructor(directory) {
                 this.directory = directory;
-                fs.readdir(directory, this.onDirectoryRead.bind(this));
-            };
 
-            this.onDirectoryRead = function(err, files) {
+                this.imageCounter = 0;
+                this.displayOrder = [];
+                this.files;
+                this.timer;
+                this.isRunning = false;
+
+                fs.readdir(directory, this.onDirectoryRead.bind(this));
+            }
+
+            onDirectoryRead(err, files) {
                 this.imageCounter = 0;
                 this.files = files;
                 var nrImages = files.length;
@@ -114,27 +64,27 @@
                     this.displayOrder[currentIndex] = this.displayOrder[randomIndex];
                     this.displayOrder[randomIndex] = temporaryValue;
                 }
-                
-                this.startSlideshow();
-            };
 
-            this.startSlideshow = function() {
+                this.startSlideshow();
+            }
+
+            startSlideshow() {
                 this.isRunning = true;
                 this.loadNextPicture();
-            };
-            
-            this.stopSlideShow = function() {
+            }
+
+            stopSlideShow() {
                 this.isRunning = false;
                 clearTimeout(this.timer);
-            };
+            }
 
-            this.loadNextPicture = function() {
+            loadNextPicture() {
                 var currentImageNumber = this.imageCounter;
                 this.imageCounter++;
-                
+
                 var slideshowSpeed = document.querySelector("#slideshow-speed").value * 1000;
                 this.timer = setTimeout(this.loadNextPicture.bind(this), slideshowSpeed);
-                
+
                 var fileName = this.files[this.displayOrder[currentImageNumber]];
                 var fileExtension = path.extname(fileName);
                 var fullFilePath = this.directory + '/' + fileName;
@@ -172,8 +122,56 @@
                         });
                     });
                 });
-            };
-        };
+            }
+        }
+
+        var ipc = require('electron').ipcRenderer;
+        var nativeImage = require('electron').nativeImage;
+        var fs = require('fs');
+        var lwip = require('lwip');
+        var path = require('path');
+
+        var pickDirectoryButton = document.querySelector('#pickDirectory');
+        var toggleSlideshowButton = document.querySelector('#toggle-slideshow');
+        var toggleOptionsButton = document.querySelector('#toggle-options');
+        var optionsBar = document.querySelector('#options-bar');
+        var optionsToggleBar = document.querySelector('#options-toggle');
+        var hideOptionsBarLink = document.querySelector('#hide-options-bar');
+        var displayImage = document.querySelector('#displayImage');
+
+        pickDirectoryButton.addEventListener("click", function() {
+            ipc.send('OpenDirectoryDialog');
+        });
+
+        toggleOptionsButton.addEventListener("click", function() {
+            optionsBar.style.display = 'block';
+            optionsToggleBar.style.display = 'none';
+        });
+
+        hideOptionsBarLink.addEventListener("click", function() {
+            optionsBar.style.display = 'none';
+            optionsToggleBar.style.display = 'block';
+        });
+
+        ipc.on("DirectorySelected", function(event, directory) {
+            pickDirectoryButton.style.display = 'none';
+            optionsBar.style.display = 'none';
+            optionsToggleBar.style.display = 'block';
+
+            var slideshowManager = new SlideshowManager(directory);
+
+            toggleSlideshowButton.addEventListener('click', function(e) {
+                if (myManager.isRunning) {
+                    myManager.stopSlideShow();
+                    toggleSlideshowButton.textContent = 'Start';
+                } else {
+                    myManager.startSlideshow();
+                    toggleSlideshowButton.textContent = 'Stop';
+                }
+            });
+            toggleSlideshowButton.style.display = 'inline';
+
+        });
     </script>
 </body>
 
